@@ -1,0 +1,269 @@
+// This is your Prisma schema file.
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// AUTH & USERS
+// ============================================================
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  avatarUrl    String?  @map("avatar_url")
+  bio          String?
+  role         String   @default("MEMBER")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  professional   Professional?
+  forumPosts     ForumPost[]
+  forumComments  ForumComment[]
+  postLikes      PostLike[]
+  serviceRequests ServiceRequest[]
+  passwordResets  PasswordReset[]
+  refreshTokens   RefreshToken[]
+  notifications  Notification[]
+  eventSubscriptions EventSubscription[]
+
+  @@map("users")
+}
+
+// Valid values: MEMBER, PROFESSIONAL, COORDINATOR, ADMIN
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("refresh_tokens")
+}
+
+model PasswordReset {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("password_resets")
+}
+
+// ============================================================
+// PROFESSIONALS
+// ============================================================
+
+model Professional {
+  id          String   @id @default(uuid())
+  userId      String   @unique @map("user_id")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  headline    String
+  affiliation String
+  memberSince String   @map("member_since")
+  website     String?
+  linkedin    String?
+  github      String?
+  rating      Float    @default(0)
+  votes       Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  expertise    ProfessionalExpertise[]
+  achievements ProfessionalAchievement[]
+  services     Service[]
+
+  @@map("professionals")
+}
+
+model ProfessionalExpertise {
+  id             String       @id @default(uuid())
+  professionalId String       @map("professional_id")
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  name           String
+
+  @@map("professional_expertise")
+}
+
+model ProfessionalAchievement {
+  id             String       @id @default(uuid())
+  professionalId String       @map("professional_id")
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  title          String
+
+  @@map("professional_achievements")
+}
+
+// ============================================================
+// EVENTS
+// ============================================================
+
+model Event {
+  id          String      @id @default(uuid())
+  name        String
+  description String?
+  emoji       String?
+  dateLabel   String      @map("date_label")
+  date        DateTime
+  location    String?
+  subscribers Int         @default(0)
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  forumPosts ForumPost[]
+  subscriptions EventSubscription[]
+
+  @@map("events")
+}
+
+// ============================================================
+// FORUM
+// ============================================================
+
+model ForumPost {
+  id        String      @id @default(uuid())
+  title     String
+  content   String?
+  icon      String      @default("BULB")
+  tag       String      @default("GERAL")
+  likes     Int         @default(0)
+  authorId  String      @map("author_id")
+  author    User        @relation(fields: [authorId], references: [id])
+  eventId   String?     @map("event_id")
+  event     Event?      @relation(fields: [eventId], references: [id])
+  pinned    Boolean     @default(false)
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  comments ForumComment[]
+  postLikes PostLike[]
+
+  @@map("forum_posts")
+}
+
+model ForumComment {
+  id        String    @id @default(uuid())
+  content   String
+  postId    String    @map("post_id")
+  post      ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String    @map("author_id")
+  author    User      @relation(fields: [authorId], references: [id])
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@map("forum_comments")
+}
+
+model PostLike {
+  id        String    @id @default(uuid())
+  postId    String    @map("post_id")
+  post      ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String    @map("user_id")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@unique([postId, userId])
+  @@map("post_likes")
+}
+
+// ============================================================
+// SERVICES
+// ============================================================
+
+model ServiceCategory {
+  id           String    @id
+  title        String
+  icon         String
+  surfaceColor String    @map("surface_color")
+  borderColor  String    @map("border_color")
+  iconColor    String    @map("icon_color")
+  emoji        String?
+  emojiColor   String?   @map("emoji_color")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  services Service[]
+
+  @@map("service_categories")
+}
+
+model Service {
+  id             String          @id @default(uuid())
+  title          String
+  description    String?
+  categoryId     String          @map("category_id")
+  category       ServiceCategory @relation(fields: [categoryId], references: [id])
+  professionalId String?         @map("professional_id")
+  professional   Professional?   @relation(fields: [professionalId], references: [id])
+  price          Float?
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  requests ServiceRequest[]
+
+  @@map("services")
+}
+
+model ServiceRequest {
+  id        String          @id @default(uuid())
+  serviceId String          @map("service_id")
+  service   Service         @relation(fields: [serviceId], references: [id])
+  userId    String          @map("user_id")
+  user      User            @relation(fields: [userId], references: [id])
+  status    String          @default("ORCAMENTO")
+  meta      String?
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
+
+  @@map("service_requests")
+}
+
+// Valid values: CONCLUIDO, PROGRESSO, ORCAMENTO, CANCELADO
+
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String?
+  read      Boolean  @default(false)
+  meta      String?  // JSON string for extra data (e.g. postId, requestId)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("notifications")
+}
+
+// Valid notification types: NEW_COMMENT, POST_LIKED, REQUEST_STATUS, EVENT_REMINDER, GENERAL
+
+// ============================================================
+// EVENT SUBSCRIPTIONS
+// ============================================================
+
+model EventSubscription {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId   String   @map("event_id")
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, eventId])
+  @@map("event_subscriptions")
+}
