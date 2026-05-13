@@ -62,12 +62,20 @@ export const getService = async (req: Request, res: Response): Promise<void> => 
 export const listMyRequests = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user!.userId;
-    const requests = await prisma.serviceRequest.findMany({
-      where: { userId },
+    const requests = await (prisma.serviceRequest as any).findMany({
+      where: { userId, status: { not: 'CANCELADO' } },
       include: { service: { include: { category: true } } },
       orderBy: { createdAt: 'desc' },
     });
-    R.ok(res, requests);
+    // Enrich free-form requests with parsed prazo from meta JSON
+    const enriched = requests.map((r: any) => {
+      let prazo: string | undefined;
+      if (!r.serviceId && r.meta) {
+        try { prazo = JSON.parse(r.meta).prazo; } catch { /* ignore */ }
+      }
+      return { ...r, prazo };
+    });
+    R.ok(res, { requests: enriched });
   } catch (err) { console.error(err); R.serverError(res); }
 };
 
@@ -75,12 +83,33 @@ export const listMyRequests = async (req: AuthRequest, res: Response): Promise<v
 export const createRequest = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user!.userId;
-    const { serviceId, meta } = req.body as { serviceId: string; meta?: string };
+    const { serviceId, title, categoria, descricao, orcamento, prazo, meta } =
+      req.body as {
+        serviceId?: string;
+        title?: string;
+        categoria?: string;
+        descricao?: string;
+        orcamento?: string;
+        prazo?: string;
+        meta?: string;
+      };
 
+    // Free-form request (no serviceId): title is required
+    if (!serviceId) {
+      if (!title?.trim()) { R.badRequest(res, 'Título é obrigatório'); return; }
+      const metaJson = JSON.stringify({ categoria, descricao, orcamento, prazo });
+      const request = await (prisma.serviceRequest as any).create({
+        data: { title: title.trim(), userId, meta: metaJson, status: 'ORCAMENTO' },
+      });
+      R.created(res, { ...request, service: null }, 'Solicitação criada');
+      return;
+    }
+
+    // Service-linked request
     const service = await prisma.service.findUnique({ where: { id: serviceId } });
     if (!service) { R.notFoundResp(res, 'Serviço não encontrado'); return; }
 
-    const request = await prisma.serviceRequest.create({
+    const request = await (prisma.serviceRequest as any).create({
       data: { serviceId, userId, meta, status: 'ORCAMENTO' },
       include: { service: { include: { category: true } } },
     });

@@ -14,7 +14,7 @@ const professionalSelect = {
   rating: true,
   votes: true,
   user: {
-    select: { id: true, name: true, email: true, avatarUrl: true },
+    select: { id: true, name: true, email: true, avatarUrl: true, role: true },
   },
   expertise: { select: { id: true, name: true } },
   achievements: { select: { id: true, title: true } },

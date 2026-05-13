@@ -17,6 +17,8 @@ export const getUser = async (req: AuthRequest, res: Response): Promise<void> =>
         role: true,
         avatarUrl: true,
         bio: true,
+        institution: true,
+        course: true,
         createdAt: true,
       },
     });
@@ -29,11 +31,11 @@ export const getUser = async (req: AuthRequest, res: Response): Promise<void> =>
 export const updateMe = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user!.userId;
-    const { name, bio, avatarUrl } = req.body as { name?: string; bio?: string; avatarUrl?: string };
+    const { name, bio, avatarUrl, institution, course } = req.body as { name?: string; bio?: string; avatarUrl?: string; institution?: string; course?: string };
     const user = await prisma.user.update({
       where: { id: userId },
-      data: { name, bio, avatarUrl },
-      select: { id: true, name: true, email: true, role: true, avatarUrl: true, bio: true },
+      data: { name, bio, avatarUrl, institution, course },
+      select: { id: true, name: true, email: true, role: true, avatarUrl: true, bio: true, institution: true, course: true },
     });
     R.ok(res, user, 'Perfil atualizado');
   } catch (err) { console.error(err); R.serverError(res); }
@@ -52,6 +54,20 @@ export const getMyStats = async (req: AuthRequest, res: Response): Promise<void>
         prisma.eventSubscription.count({ where: { userId } }),
       ]);
     R.ok(res, { postsCount, commentsCount, requestsCount, likesGiven, eventsSubscribed });
+  } catch (err) { console.error(err); R.serverError(res); }
+};
+
+// GET /api/users/me/events
+export const getMyEvents = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!.userId;
+    const subscriptions = await prisma.eventSubscription.findMany({
+      where: { userId },
+      include: { event: true },
+      orderBy: { event: { date: 'asc' } },
+    });
+    const events = subscriptions.map((s) => ({ ...s.event, subscribedAt: s.createdAt }));
+    R.ok(res, events);
   } catch (err) { console.error(err); R.serverError(res); }
 };
 

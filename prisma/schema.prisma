@@ -21,6 +21,8 @@ model User {
   passwordHash String   @map("password_hash")
   avatarUrl    String?  @map("avatar_url")
   bio          String?
+  institution  String?
+  course       String?
   role         String   @default("MEMBER")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
@@ -217,15 +219,16 @@ model Service {
 }
 
 model ServiceRequest {
-  id        String          @id @default(uuid())
-  serviceId String          @map("service_id")
-  service   Service         @relation(fields: [serviceId], references: [id])
-  userId    String          @map("user_id")
-  user      User            @relation(fields: [userId], references: [id])
-  status    String          @default("ORCAMENTO")
+  id        String    @id @default(uuid())
+  title     String?
+  serviceId String?   @map("service_id")
+  service   Service?  @relation(fields: [serviceId], references: [id])
+  userId    String    @map("user_id")
+  user      User      @relation(fields: [userId], references: [id])
+  status    String    @default("ORCAMENTO")
   meta      String?
-  createdAt DateTime        @default(now()) @map("created_at")
-  updatedAt DateTime        @updatedAt @map("updated_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
 
   @@map("service_requests")
 }

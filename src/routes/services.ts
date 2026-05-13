@@ -17,7 +17,7 @@ router.get('/requests', authenticate, ctrl.listMyRequests);
 router.post(
   '/requests',
   authenticate,
-  [body('serviceId').notEmpty().withMessage('Service ID é obrigatório'), validate],
+  [body('title').if(body('serviceId').not().exists()).notEmpty().withMessage('Título é obrigatório quando serviceId não é informado'), validate],
   ctrl.createRequest
 );
 

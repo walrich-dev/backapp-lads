@@ -22,6 +22,9 @@ router.patch(
 // GET /api/users/me/stats
 router.get('/me/stats', ctrl.getMyStats);
 
+// GET /api/users/me/events
+router.get('/me/events', ctrl.getMyEvents);
+
 // PATCH /api/users/me/password
 router.patch(
   '/me/password',

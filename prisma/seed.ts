@@ -1,4 +1,9 @@
-import { ForumTag, PostIcon, PrismaClient, RequestStatus, UserRole } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+
+const UserRole = { ADMIN: 'ADMIN', COORDINATOR: 'COORDINATOR', PROFESSIONAL: 'PROFESSIONAL', MEMBER: 'MEMBER' };
+const PostIcon  = { BULB: 'BULB', HANDSHAKE: 'HANDSHAKE', QUESTION: 'QUESTION' };
+const ForumTag  = { GERAL: 'GERAL', TECNICO: 'TECNICO', NETWORKING: 'NETWORKING', DUVIDAS: 'DUVIDAS' };
+const RequestStatus = { ORCAMENTO: 'ORCAMENTO', PROGRESSO: 'PROGRESSO', CONCLUIDO: 'CONCLUIDO', CANCELADO: 'CANCELADO' };
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
