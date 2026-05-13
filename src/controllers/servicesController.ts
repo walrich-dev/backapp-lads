@@ -137,7 +137,7 @@ export const getRequest = async (req: AuthRequest, res: Response): Promise<void>
     });
     if (!request) { R.notFoundResp(res, 'Solicitação não encontrada'); return; }
     // Only the requester, the professional, or an admin can view
-    const isProfessional = request.service.professional?.user?.id === userId;
+    const isProfessional = request.service?.professional?.user?.id === userId;
     if (request.userId !== userId && !isProfessional && req.user!.role !== 'ADMIN') {
       R.forbidden(res); return;
     }
@@ -175,7 +175,7 @@ export const updateRequestStatus = async (req: AuthRequest, res: Response): Prom
     if (!existing) { R.notFoundResp(res, 'Solicitação não encontrada'); return; }
 
     const isOwner = existing.userId === req.user!.userId;
-    const isProfessional = existing.service.professional?.userId === req.user!.userId;
+    const isProfessional = existing.service?.professional?.userId === req.user!.userId;
     const isAdmin = req.user!.role === 'ADMIN';
 
     if (!isOwner && !isProfessional && !isAdmin) { R.forbidden(res); return; }
@@ -198,7 +198,7 @@ export const updateRequestStatus = async (req: AuthRequest, res: Response): Prom
           userId: existing.userId,
           type: 'REQUEST_STATUS',
           title: 'Atualização na sua solicitação',
-          body: `Sua solicitação para "${updated.service.title}" está agora: ${statusLabels[status] ?? status}.`,
+          body: `Sua solicitação para "${updated.service?.title ?? 'serviço'}" está agora: ${statusLabels[status] ?? status}.`,
           meta: JSON.stringify({ requestId: id }),
         },
       }).catch(() => { /* non-critical */ });
